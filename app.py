@@ -34,9 +34,10 @@ st.markdown("""
         border-bottom: 1px solid #f4f4f5; font-size: 14px;
     }
     
-    /* Buttons */
-    .stButton>button {
-        border-radius: 8px !important; font-weight: 600 !important;
+    /* Custom Input Styling */
+    .stTextInput input {
+        border-radius: 8px !important; border: 1px solid #e4e4e7 !important;
+        padding: 12px 16px !important; background: #fafafa !important;
     }
 
     /* Hide UI noise */
@@ -50,14 +51,13 @@ col_net, col_btns = st.columns([2, 1])
 
 with col_net:
     st.markdown('<p class="net-worth-label">Net Worth</p>', unsafe_allow_html=True)
-    # Using a state-based balance so "Add Account" can change it
     if 'balance' not in st.session_state:
         st.session_state.balance = 687041.79
     
     st.markdown(f'<p class="net-worth-val">${st.session_state.balance:,.2f} <span style="color:#10b981; font-size:16px; margin-left:10px;">↑ 3.5%</span></p>', unsafe_allow_html=True)
 
 with col_btns:
-    st.write("## ") # Padding
+    st.write("## ") # Spacing
     sub_col1, sub_col2 = st.columns(2)
     with sub_col1:
         if st.button("Refresh All", use_container_width=True):
@@ -94,11 +94,54 @@ with col_side:
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col_main:
-    # 3. GOOGLE SEARCH (Centered & Prominent)
+    # 3. GOOGLE SEARCH BAR
     st.markdown("### 🔍 Global Market Search")
-    search_q = st.text_input("Search Google for live prices, models, or trends...", placeholder="e.g. 2026 Toyota RAV4 Hybrid Price", label_visibility="collapsed")
+    search_q = st.text_input("Search live prices or market trends...", placeholder="e.g. 2026 Toyota RAV4 Hybrid Price", label_visibility="collapsed")
     
     if search_q:
-        # Check if it's a question for the AI or a search for Google
+        # Check if it's an AI question or a Google search
         if any(word in search_q.lower() for word in ["can i", "analyze", "should i"]):
-             st.info("💡 Tip: Ask this in the 'Neural Advisor' box below for a
+             st.info("💡 Tip: Ask this in the 'Neural Advisor' box below for detailed financial analysis.")
+        else:
+             st.success(f"Searching Google for: {search_q}")
+             st.markdown(f'<meta http-equiv="refresh" content="0; url=https://www.google.com/search?q={search_q}">', unsafe_allow_html=True)
+
+    # 4. PERFORMANCE CHART
+    st.markdown('<div class="card"><strong>Net worth performance</strong>', unsafe_allow_html=True)
+    df = pd.DataFrame({
+        'Date': ['Nov 6', 'Nov 13', 'Nov 20', 'Nov 27', 'Dec 6'],
+        'Value': [663000, 668000, 674000, 681000, st.session_state.balance]
+    })
+    fig = go.Figure(go.Scatter(x=df['Date'], y=df['Value'], fill='tozeroy', line=dict(color='#0ea5e9', width=3), fillcolor='rgba(14, 165, 233, 0.05)'))
+    fig.update_layout(height=250, margin=dict(l=0,r=0,t=10,b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', xaxis=dict(showgrid=False), yaxis=dict(side="right", gridcolor="#f4f4f5"))
+    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # 5. NEURAL ADVISOR
+    st.markdown("### 🤖 Neural Advisor")
+    
+    if "messages" not in st.session_state:
+        st.session_state.messages = [{"role": "assistant", "content": "I'm AIford. Ready to analyze your wealth strategy. Ask me anything."}]
+
+    for m in st.session_state.messages:
+        with st.chat_message(m["role"]):
+            st.markdown(m["content"])
+
+    if chat_input := st.chat_input("Ask about your finances..."):
+        st.session_state.messages.append({"role": "user", "content": chat_input})
+        with st.chat_message("user"):
+            st.markdown(chat_input)
+
+        with st.chat_message("assistant"):
+            try:
+                # Use st.secrets to securely access your Groq Key
+                client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=st.secrets["GROQ_API_KEY"])
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[{"role": "user", "content": f"Balance: ${st.session_state.balance}. Query: {chat_input}"}]
+                )
+                answer = response.choices[0].message.content
+                st.markdown(answer)
+                st.session_state.messages.append({"role": "assistant", "content": answer})
+            except Exception as e:
+                st.error("Brain Connection Pending. Make sure 'GROQ_API_KEY' is set in Streamlit Secrets.")
