@@ -108,7 +108,7 @@ with col_chat:
 
         with st.chat_message("assistant"):
             # Connection to Local RTX 4070 Ti Super
-            client = OpenAI(base_url="http://127.0.0.1:1234/v1", api_key="lm-studio")
+            client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key="PASTE_YOUR_FREE_GROQ_KEY_HERE")
             
             with st.spinner("Decoding Market Data..."):
                 try:
@@ -155,4 +155,5 @@ with col_feed:
                 <span style="font-size: 14px;">{vendor}</span>
                 <span style="float: right; color: {color}; font-weight: bold;">{price}</span>
             </div>
+
         """, unsafe_allow_html=True)
