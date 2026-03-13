@@ -1,159 +1,123 @@
 import streamlit as st
+import plotly.graph_objects as go
 from openai import OpenAI
-import requests
-from bs4 import BeautifulSoup
-import time
+import pandas as pd
+import webbrowser
 
-# --- AIford 2.0: Cyber-Aesthetic Edition ---
-st.set_page_config(page_title="AIford | Ultra", layout="wide", page_icon="⚡")
+# --- AIford 1.0: Monarch Executive Build ---
+st.set_page_config(page_title="AIford Wealth", layout="wide", page_icon="🏦")
 
-# THE "GLOW-UP" CSS
+# MONARCH-LEVEL CUSTOM CSS
 st.markdown("""
     <style>
-    /* Global Styles */
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
     
-    .stApp {
-        background: radial-gradient(circle at top right, #0d1b2a, #010101);
-        color: #e0e0e0;
-        font-family: 'Inter', sans-serif;
-    }
-
-    /* The Neon Header */
-    .neon-card {
-        background: rgba(255, 255, 255, 0.03);
-        border-radius: 30px;
-        padding: 50px;
-        text-align: center;
-        border: 1px solid rgba(0, 255, 255, 0.2);
-        box-shadow: 0 0 20px rgba(0, 255, 255, 0.1), inset 0 0 20px rgba(0, 255, 255, 0.05);
-        margin-bottom: 40px;
-    }
-
-    .balance-label { font-family: 'Orbitron', sans-serif; color: #00f2ff; text-transform: uppercase; letter-spacing: 3px; font-size: 14px; }
+    html, body, [class*="st-"] { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .stApp { background-color: #f8fafc; color: #1e293b; }
     
-    .balance-huge {
-        font-family: 'Orbitron', sans-serif;
-        font-size: 80px;
-        font-weight: 700;
-        color: #ffffff;
-        text-shadow: 0 0 30px rgba(0, 242, 255, 0.6);
-        margin: 10px 0;
+    /* Monarch Header */
+    .header-container { background: white; padding: 2rem; border-bottom: 1px solid #e2e8f0; margin-bottom: 2rem; }
+    .balance-label { color: #64748b; font-size: 0.875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .balance-main { font-size: 3rem; font-weight: 800; color: #0f172a; margin: 0; }
+    
+    /* Search Bar */
+    .search-input {
+        width: 100%; padding: 15px 25px; border-radius: 50px; border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05); font-size: 16px; outline: none;
     }
 
-    /* Buttons with Glow */
-    .stButton>button {
-        background: linear-gradient(90deg, #00f2ff, #7000ff);
-        color: white;
-        border: none;
-        border-radius: 15px;
-        padding: 15px 30px;
-        font-weight: bold;
-        transition: 0.3s;
-        box-shadow: 0 0 15px rgba(0, 242, 255, 0.4);
-    }
-    .stButton>button:hover {
-        transform: scale(1.05);
-        box-shadow: 0 0 25px rgba(0, 242, 255, 0.6);
-    }
+    /* Transaction Card */
+    .txn-card { background: white; padding: 1rem; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; }
+    .txn-vendor { font-weight: 600; color: #0f172a; }
+    .txn-amt { font-weight: 700; }
 
-    /* Glassmorphism Chat */
-    .stChatMessage {
-        background: rgba(255, 255, 255, 0.05) !important;
-        backdrop-filter: blur(15px);
-        border-radius: 20px !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        margin-bottom: 15px;
-    }
-
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar { width: 8px; }
-    ::-webkit-scrollbar-track { background: #010101; }
-    ::-webkit-scrollbar-thumb { background: #7000ff; border-radius: 10px; }
+    /* Advisor Chat */
+    .stChatMessage { border-radius: 12px !important; border: 1px solid #e2e8f0 !important; background: white !important; }
+    
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
 
-# --- THE VAULT (Top Hero Section) ---
-st.markdown('<div class="neon-card">', unsafe_allow_html=True)
-balance = st.session_state.get('balance', 2540.80)
-st.markdown('<p class="balance-label">Available Wealth</p>', unsafe_allow_html=True)
-st.markdown(f'<h1 class="balance-huge">${balance:,.2f}</h1>', unsafe_allow_html=True)
+# --- 1. TOP SECTION: THE MONARCH DASHBOARD ---
+st.markdown('<div class="header-container">', unsafe_allow_html=True)
+col_bal, col_chart = st.columns([1, 2])
 
-col1, col2, col3 = st.columns([1,1,1])
-with col2:
-    if st.button("⚡ SYNC NEURAL BANK"):
-        with st.status("Accessing Mainframe..."):
-            time.sleep(1)
-            st.session_state.balance = 15720.45
-            st.session_state.sync_glow = True
-        st.rerun()
+with col_bal:
+    st.markdown('<p class="balance-label">Total Net Worth</p>', unsafe_allow_html=True)
+    balance = 142250.80
+    st.markdown(f'<h1 class="balance-main">${balance:,.2f}</h1>', unsafe_allow_html=True)
+    st.markdown('<p style="color: #10b981; font-weight: 700; margin:0;">↑ $1,240.50 (Last 30 days)</p>', unsafe_allow_html=True)
+
+with col_chart:
+    # Monarch-style area chart
+    df = pd.DataFrame({'Month': ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'], 'Val': [130000, 132500, 138000, 135000, 140000, 142250]})
+    fig = go.Figure(go.Scatter(x=df['Month'], y=df['Val'], fill='tozeroy', line=dict(color='#3b82f6', width=3), fillcolor='rgba(59, 130, 246, 0.05)'))
+    fig.update_layout(height=120, margin=dict(l=0,r=0,t=0,b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', xaxis=dict(visible=False), yaxis=dict(visible=False))
+    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 st.markdown('</div>', unsafe_allow_html=True)
 
-# --- MAIN INTERFACE ---
-col_chat, col_feed = st.columns([2, 1], gap="large")
+# --- 2. MAIN INTERFACE ---
+col_sidebar, col_main = st.columns([1, 2.5], gap="large")
 
-with col_chat:
-    st.markdown("### 🤖 AIford Neural Advisor")
+with col_sidebar:
+    st.subheader("Bank Accounts")
+    # Simulated Accounts
+    accounts = [("Checking", "$12,450.00"), ("Savings", "$50,107.55"), ("Investment", "$79,693.25")]
+    for name, amt in accounts:
+        st.markdown(f"""
+            <div class="txn-card">
+                <div><b>{name}</b><br><small style="color:#64748b">Synced 2m ago</small></div>
+                <div style="font-weight:700;">{amt}</div>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    st.divider()
+    st.subheader("Recent Moves")
+    txns = [("Apple Store", "-$2,499.00"), ("Whole Foods", "-$82.40"), ("Salary Deposit", "+$4,500.00")]
+    for v, a in txns:
+        st.markdown(f"""
+            <div class="txn-card">
+                <span>{v}</span>
+                <span style="color: {'#10b981' if '+' in a else '#1e293b'}">{a}</span>
+            </div>
+        """, unsafe_allow_html=True)
+
+with col_main:
+    # Google Search Functionality
+    search_query = st.text_input("🔍 Search Market or Ask Advisor...", placeholder="Search Google or analyze wealth...")
+    if search_query and not search_query.startswith("Can I"):
+        # This opens a new tab for Google results automatically
+        st.markdown(f'<meta http-equiv="refresh" content="0; url=https://www.google.com/search?q={search_query}">', unsafe_allow_html=True)
+
+    st.divider()
+
+    # Chatbot Logic
     if "messages" not in st.session_state:
-        st.session_state.messages = [{"role": "assistant", "content": "System Online. Your finances are encrypted and ready for analysis."}]
+        st.session_state.messages = [{"role": "assistant", "content": "I'm AIford. Your wealth is secure. How can I assist with your March allocations?"}]
 
     for m in st.session_state.messages:
         with st.chat_message(m["role"]):
             st.markdown(m["content"])
 
-    if prompt := st.chat_input("Can I afford a new graphics card?"):
+    if prompt := st.chat_input("Analyze my spending..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
 
         with st.chat_message("assistant"):
-            # Connection to Local RTX 4070 Ti Super
-            client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key="PASTE_YOUR_FREE_GROQ_KEY_HERE")
-            
-            with st.spinner("Decoding Market Data..."):
-                try:
-                    # Logic
-                    safe_limit = balance - 1000.0
-                    
-                    response = client.chat.completions.create(
-                        model="local-model",
-                        messages=[{"role": "user", "content": f"Balance: ${balance}. Safe to spend: ${safe_limit}. Question: {prompt}. Be a cool, firm AI bodyguard."}],
-                        timeout=30
-                    )
-                    
-                    reply = response.choices[0].message.content
-                    st.markdown(f"**Advisor:** {reply}")
-                    st.session_state.messages.append({"role": "assistant", "content": reply})
-                except Exception as e:
-                    st.error(f"⚠️ Brain Offline: {e}")
-
-with col_feed:
-    st.markdown("### 📡 Live Signal")
-    
-    # Fraud Alert (Glowing Red)
-    if st.session_state.get('sync_glow'):
-        st.markdown("""
-            <div style="background: rgba(255,0,0,0.1); border: 1px solid #ff0000; padding: 15px; border-radius: 15px; color: #ff4b4b; margin-bottom: 20px;">
-                <strong>🚨 THREAT DETECTED</strong><br>
-                Suspicious login attempt from: <b>Seoul, KR</b><br>
-                <small>Auto-blocking in 3... 2... 1...</small>
-            </div>
-        """, unsafe_allow_html=True)
-
-    # Activity Feed
-    st.markdown('<p style="color:#7000ff; font-weight:bold; font-size:12px;">ENCRYPTED LEDGER</p>', unsafe_allow_html=True)
-    txns = [
-        ("Nvidia Store", "-$899.00"),
-        ("Steam Games", "-$59.99"),
-        ("Tesla Supercharger", "-$22.40"),
-        ("Monthly Salary", "+$4,200.00")
-    ]
-    for vendor, price in txns:
-        color = "#00ff88" if "+" in price else "#ffffff"
-        st.markdown(f"""
-            <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 10px; margin-bottom: 8px; border-left: 3px solid #7000ff;">
-                <span style="font-size: 14px;">{vendor}</span>
-                <span style="float: right; color: {color}; font-weight: bold;">{price}</span>
-            </div>
-
-        """, unsafe_allow_html=True)
+            try:
+                # ACCESSING THE BRAIN
+                api_key = st.secrets["GROQ_API_KEY"]
+                client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=api_key)
+                
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[{"role": "user", "content": f"Balance: ${balance}. User: {prompt}"}]
+                )
+                full_response = response.choices[0].message.content
+                st.markdown(full_response)
+                st.session_state.messages.append({"role": "assistant", "content": full_response})
+            except Exception as e:
+                st.error(f"Brain Error: {e}")
+                st.info("Check your Streamlit Secrets for 'GROQ_API_KEY'")
